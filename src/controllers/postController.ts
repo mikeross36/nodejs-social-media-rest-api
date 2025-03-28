@@ -216,6 +216,19 @@ async function deletePostHandler(req: Request, res: Response) {
       return res.status(404).json({ message: errMsg });
     }
     if (post.creator.equals(req.userAuth?._id) || req.userAuth?.isAdmin) {
+      if (post.imageUrl && post.imageUrl.includes("/")) {
+        let publicId = post.imageUrl.split("/").pop()?.split(".")[0];
+        if (publicId) {
+          try {
+            await cloudinary.v2.uploader.destroy(publicId);
+            logger.info("Pst image deleted from cloudinary");
+          } catch (err) {
+            const errMsg = "Unable to delete post image from cloudinary";
+            logger.error(errMsg);
+            return res.status(500).json({ message: errMsg });
+          }
+        }
+      }
       await post.deleteOne({ _id: req.params.id });
       return res.status(200).json({ message: "Post deleted" });
     } else {
